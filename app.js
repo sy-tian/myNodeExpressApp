@@ -5,7 +5,22 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
-var index = require('./routes/index');
+var mongo = require('mongodb');
+var monk = require('monk');
+
+var url = "mongodb://Angela:0pUuzblsfoeTY2Jl@mynodeexpressapp-shard-00-00-jq2wj.mongodb.net:27017," +
+    "mynodeexpressapp-shard-00-01-jq2wj.mongodb.net:27017," +
+    "mynodeexpressapp-shard-00-02-jq2wj.mongodb.net:27017/myNodeExpressApp" +
+    "?ssl=true&replicaSet=myNodeExpressApp-shard-0&authSource=admin";
+
+var db = monk(url, function(err){
+    if(err){
+        console.error("Db is not connected", err.message);
+    }
+    console.log("connect successfully....");
+});
+
+var routes = require('./routes/index');
 var users = require('./routes/users');
 
 var app = express();
@@ -20,10 +35,15 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static('public'));
-console.log("....." + path.join(__dirname, 'public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', index);
+// Make our db accessible to our router
+app.use(function (req, res, next) {
+    req.db = db;
+    next();
+});
+
+app.use('/', routes);
 app.use('/users', users);
 
 // catch 404 and forward to error handler
